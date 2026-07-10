@@ -12,7 +12,7 @@ endif()
 project ("mini-ecs-nau")
 
 # Add source to this project's executable.
-add_executable (mini-ecs-nau "src/main.cpp" )
+add_executable (mini-ecs-nau "src/main.cpp"  "src/Entity.h" "src/Component.h" "src/HealthComponent.h" "src/TransformComponent")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET mini-ecs-nau PROPERTY CXX_STANDARD 20)
