@@ -1,7 +1,19 @@
 ﻿	# CMakeList.txt : CMake project for mini-ecs-nau, include source and define
 	# project specific logic here.
 	#
-	cmake_minimum_required (VERSION 3.10)
+	cmake_minimum_required (VERSION 3.16)
+
+	# Detect sccache before project() - CMAKE_CXX_COMPILER_LAUNCHER is
+	# only read once, when project() first configures the compiler.
+	# Falls back to a normal (uncached) build if sccache isn't
+	# installed - not an error.
+	find_program(SCCACHE_PROGRAM sccache)
+	if(SCCACHE_PROGRAM)
+	  message(STATUS "sccache found: ${SCCACHE_PROGRAM}")
+	  set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_PROGRAM})
+	else()
+	  message(STATUS "sccache not found, building without a compiler cache")
+	endif()
 
 	# Enable Hot Reload for MSVC compilers if supported.
 	if (POLICY CMP0141)
@@ -41,3 +53,10 @@
 	target_link_libraries(memory_tests PRIVATE nlohmann_json::nlohmann_json)
 	target_link_libraries(serialization_tests PRIVATE nlohmann_json::nlohmann_json)
 	target_link_libraries(scene_benchmark PRIVATE nlohmann_json::nlohmann_json)
+
+target_precompile_headers(mini-ecs-nau PRIVATE <nlohmann/json.hpp>)
+target_precompile_headers(scene_tests REUSE_FROM mini-ecs-nau)
+target_precompile_headers(movement_tests REUSE_FROM mini-ecs-nau)
+target_precompile_headers(memory_tests REUSE_FROM mini-ecs-nau)
+target_precompile_headers(serialization_tests REUSE_FROM mini-ecs-nau)
+target_precompile_headers(scene_benchmark REUSE_FROM mini-ecs-nau)

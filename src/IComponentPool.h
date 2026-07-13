@@ -18,7 +18,8 @@ class IComponentPool {
   virtual Component* GetBase(Entity e) = 0;
   // Used by Scene::LoadFromFile to insert a component built by
   // ComponentRegistry, whose factories only know Component, not T.
-  virtual void InsertFromBase(Entity e, std::unique_ptr<Component> component) = 0;
+  virtual void InsertFromBase(Entity e,
+                              std::unique_ptr<Component> component) = 0;
   virtual const std::vector<Entity>& Entities() const = 0;
   virtual size_t MemoryBytes() const = 0;
 };

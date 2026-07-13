@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      # Same sccache the project's CMakeLists.txt looks for via
+      # find_program(SCCACHE_PROGRAM sccache) - installs the binary and
+      # wires it to the Actions cache backend, so this exercises the
+      # exact compiler-cache path added in this commit.
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+        with:
+          version: "v0.8.2"
+
+      # FetchContent downloads nlohmann/json into build/_deps on first
+      # configure; caching it keyed on CMakeLists.txt avoids
+      # re-downloading it on every run.
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-deps-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Configure
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+        run: cmake --build build
+
+      # Debug only: assert() compiles out under NDEBUG (Release), so a
+      # Release run can't prove correctness - only Debug actually
+      # exercises the assertions in the test executables.
+      - name: Run tests (Debug)
+        if: matrix.build_type == 'Debug'
+        working-directory: build
+        run: |
+          ./scene_tests
+          ./movement_tests
+          ./memory_tests
+          ./serialization_tests
+
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: clang-format --dry-run
+        run: find src tests \( -name '*.h' -o -name '*.cpp' \) -print0 | xargs -0 clang-format --dry-run --Werror
