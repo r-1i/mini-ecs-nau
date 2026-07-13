@@ -1,14 +1,18 @@
-#pragma once
+﻿#pragma once
 
+#include <fstream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <tuple>
 #include <typeindex>
 #include <unordered_map>
 #include <vector>
 
 #include "Component.h"
+#include "ComponentRegistry.h"
 #include "Entity.h"
+#include "ISavable.h"
 #include "System.h"
 
 class Scene {
@@ -72,6 +76,90 @@ class Scene {
 
   void Update(float dt) {
     for (auto& system : systems_) system->Execute(dt);
+  }
+
+  // Iterates every entity and every ISavable component it owns.
+  // Components that don't implement ISavable are silently skipped -
+  // not every component is required to be persistable.
+  // nextEntityId_ is stored too, so entities created after loading
+  // don't collide with ids restored from the file.
+  bool SaveToFile(const std::string& path) const {
+    nlohmann::json root;
+    root["nextEntityId"] = nextEntityId_;
+    root["entities"] = nlohmann::json::array();
+
+    for (const auto& [entity, components] : entities_) {
+      nlohmann::json entityJson;
+      entityJson["id"] = entity.id();
+      entityJson["components"] = nlohmann::json::array();
+
+      for (const auto& [type, component] : components) {
+        if (const auto* savable = dynamic_cast<ISavable*>(component.get())) {
+          entityJson["components"].push_back(savable->ToJson());
+        }
+      }
+
+      root["entities"].push_back(entityJson);
+    }
+
+    std::ofstream file(path);
+    if (!file.is_open()) {
+      return false;
+    }
+    file << root.dump(2);
+    return true;
+  }
+
+  // Reads a scene previously written by SaveToFile and replaces this
+  // Scene's entities with it. Parses into a temporary Scene first, so
+  // a failure partway through (bad JSON, unknown component type)
+  // leaves the current scene untouched instead of half-overwritten.
+  // systems_ is deliberately left alone - loading a scene shouldn't
+  // unregister systems set up before the load.
+  // Returns false (does not throw) on any failure: missing file,
+  // malformed JSON, or an unrecognized component "type" - these are
+  // expected external conditions, not programmer bugs.
+  bool LoadFromFile(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+      return false;
+    }
+
+    try {
+      nlohmann::json root;
+      file >> root;
+
+      Scene loaded;
+      loaded.nextEntityId_ = root.at("nextEntityId").get<Entity::Id>();
+
+      for (const auto& entityJson : root.at("entities")) {
+        Entity entity(entityJson.at("id").get<Entity::Id>());
+
+        for (const auto& componentJson : entityJson.at("components")) {
+          const std::string type = componentJson.at("type").get<std::string>();
+
+          const auto& registry = GetComponentRegistry();
+          auto it = registry.find(type);
+          if (it == registry.end()) {
+            return false;  // unknown component type
+          }
+
+          std::unique_ptr<Component> component = it->second(componentJson);
+          // typeid(*component) resolves to the dynamic (most-derived)
+          // type at runtime via RTTI - we don't know T at compile
+          // time here, unlike AddComponent<T>, which is why
+          // GetComponent's static_cast trick doesn't apply on this path.
+          loaded.entities_[entity][std::type_index(typeid(*component))] =
+              std::move(component);
+        }
+      }
+
+      entities_ = std::move(loaded.entities_);
+      nextEntityId_ = loaded.nextEntityId_;
+      return true;
+    } catch (const nlohmann::json::exception&) {
+      return false;
+    }
   }
 
  private:
