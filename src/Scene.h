@@ -4,9 +4,12 @@
 #include <stdexcept>
 #include <typeindex>
 #include <unordered_map>
+#include <tuple>
+#include <vector>
 
 #include "Component.h"
 #include "Entity.h"
+#include "System.h"
 
 class Scene {
  public:
@@ -40,10 +43,31 @@ class Scene {
     return components.find(std::type_index(typeid(T))) != components.end();
   }
 
+  template <typename... Ts>
+  std::vector<std::tuple<Entity, Ts&...>> GetEntitiesWith() {
+      std::vector<std::tuple<Entity, Ts&...>> result;
+      for (auto& [entity, components] : entities_) {
+          if ((HasComponent<Ts>(entity) && ...)) {
+              result.emplace_back(entity, *GetComponent<Ts>(entity)...);
+          }
+      }
+      return result;
+  }
+
+  void RegisterSystem(std::unique_ptr<System> system) {
+      systems_.push_back(std::move(system));
+  }
+
+  void Update(float dt) {
+      for (auto& system : systems_) system->Execute(dt);
+  }
+
  private:
   // storage
   std::unordered_map<
       Entity, std::unordered_map<std::type_index, std::unique_ptr<Component>>>
       entities_;
   Entity::Id nextEntityId_ = 0;
+
+  std::vector<std::unique_ptr<System>> systems_;
 };
