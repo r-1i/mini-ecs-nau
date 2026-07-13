@@ -66,7 +66,9 @@ class ComponentPool : public IComponentPool {
   }
 
   std::span<T> Data() { return dense_; }
-  const std::vector<Entity>& Entities() const override { return denseToEntity_; }
+  const std::vector<Entity>& Entities() const override {
+    return denseToEntity_;
+  }
   size_t Size() const { return dense_.size(); }
 
   size_t MemoryBytes() const override {

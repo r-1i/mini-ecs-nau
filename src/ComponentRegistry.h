@@ -25,13 +25,16 @@ struct ComponentRegistryEntry {
 
 inline const std::unordered_map<std::string, ComponentRegistryEntry>&
 GetComponentRegistry() {
-  static const std::unordered_map<std::string, ComponentRegistryEntry> registry = {
-      {"TransformComponent",
-       {&TransformComponent::FromJson,
-        [] { return std::make_unique<ComponentPool<TransformComponent>>(); }}},
-      {"HealthComponent",
-       {&HealthComponent::FromJson,
-        [] { return std::make_unique<ComponentPool<HealthComponent>>(); }}},
-  };
+  static const std::unordered_map<std::string, ComponentRegistryEntry>
+      registry = {
+          {"TransformComponent",
+           {&TransformComponent::FromJson,
+            [] {
+              return std::make_unique<ComponentPool<TransformComponent>>();
+            }}},
+          {"HealthComponent",
+           {&HealthComponent::FromJson,
+            [] { return std::make_unique<ComponentPool<HealthComponent>>(); }}},
+      };
   return registry;
 }
