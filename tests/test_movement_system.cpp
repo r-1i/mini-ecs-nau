@@ -12,14 +12,14 @@ int main() {
   Entity moving = scene.CreateEntity();
   scene.AddComponent<TransformComponent>(moving);
 
-  Entity still = scene.CreateEntity();  
+  Entity still = scene.CreateEntity();
 
   auto movement = std::make_unique<MovementSystem>(scene);
   movement->velocity = {1.0f, 2.0f, 0.0f};
   scene.RegisterSystem(std::move(movement));
 
   scene.Update(1.0f);
-  scene.Update(0.5f);  //dt = 1.5
+  scene.Update(0.5f);  // dt = 1.5
 
   auto* transform = scene.GetComponent<TransformComponent>(moving);
   assert(transform->position.x == 1.5f);

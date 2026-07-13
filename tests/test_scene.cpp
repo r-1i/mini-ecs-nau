@@ -3,9 +3,9 @@
 #include <memory>
 
 #include "../src/HealthComponent.h"
+#include "../src/MovementSystem.h"
 #include "../src/Scene.h"
 #include "../src/TransformComponent.h"
-#include "../src/MovementSystem.h"
 
 int main() {
   Scene scene;
@@ -37,12 +37,17 @@ int main() {
   scene.AddComponent<TransformComponent>(e3);
 
   scene.RegisterSystem(std::make_unique<MovementSystem>(scene));
-  std::cout << "Pos.x [e3]: " << scene.GetComponent<TransformComponent>(e3)->position.x << std::endl;
+  std::cout << "Pos.x [e3]: "
+            << scene.GetComponent<TransformComponent>(e3)->position.x
+            << std::endl;
   scene.Update(1.0f);  // Move entities for 1 second
-  std::cout << "Pos.x [e3]: " << scene.GetComponent<TransformComponent>(e3)->position.x << std::endl;
+  std::cout << "Pos.x [e3]: "
+            << scene.GetComponent<TransformComponent>(e3)->position.x
+            << std::endl;
   scene.Update(1.0f);  // Move entities for 1 second
-  std::cout << "Pos.x [e3]: " << scene.GetComponent<TransformComponent>(e3)->position.x << std::endl;
-
+  std::cout << "Pos.x [e3]: "
+            << scene.GetComponent<TransformComponent>(e3)->position.x
+            << std::endl;
 
   std::cout << "ALL SCENE TESTS PASSED\n";
   return 0;
