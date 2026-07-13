@@ -41,8 +41,8 @@ class Profiler {
                 << std::setw(10) << entry.callCount << std::setw(14)
                 << std::fixed << std::setprecision(3) << entry.totalMs
                 << std::setw(12) << (entry.totalMs / entry.callCount)
-                << std::setw(12) << entry.minMs << std::setw(12)
-                << entry.maxMs << "\n";
+                << std::setw(12) << entry.minMs << std::setw(12) << entry.maxMs
+                << "\n";
     }
   }
 
