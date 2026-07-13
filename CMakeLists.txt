@@ -21,3 +21,6 @@ endif()
 # TODO: Add tests and install targets if needed.
 add_executable(scene_tests tests/test_scene.cpp)
 set_property(TARGET scene_tests PROPERTY CXX_STANDARD 20)
+
+add_executable(movement_tests tests/test_movement_system.cpp)
+set_property(TARGET movement_tests PROPERTY CXX_STANDARD 20)
