@@ -7,22 +7,31 @@
 #include <unordered_map>
 
 #include "Component.h"
+#include "ComponentPool.h"
 #include "HealthComponent.h"
+#include "IComponentPool.h"
 #include "TransformComponent.h"
 
-using ComponentFactory =
-    std::function<std::unique_ptr<Component>(const nlohmann::json&)>;
+// Per-type factories, keyed by the "type" string ISavable::ToJson
+// writes. fromJson rebuilds the component; makePool builds an empty
+// pool for a type LoadFromFile may see before any AddComponent<T>
+// call ever created one. Deliberately doesn't include Scene.h -
+// Scene.h includes this header, so the reverse would be circular;
+// routing pool creation through IComponentPool avoids that.
+struct ComponentRegistryEntry {
+  std::function<std::unique_ptr<Component>(const nlohmann::json&)> fromJson;
+  std::function<std::unique_ptr<IComponentPool>()> makePool;
+};
 
-// Maps the "type" string written by ISavable::ToJson back to a
-// function that reconstructs that component from JSON. Every
-// ISavable component needs an entry here - see the round-trip test
-// in tests/test_serialization.cpp, which is what actually catches a
-// forgotten registration.
-inline const std::unordered_map<std::string, ComponentFactory>&
+inline const std::unordered_map<std::string, ComponentRegistryEntry>&
 GetComponentRegistry() {
-  static const std::unordered_map<std::string, ComponentFactory> registry = {
-      {"TransformComponent", &TransformComponent::FromJson},
-      {"HealthComponent", &HealthComponent::FromJson},
+  static const std::unordered_map<std::string, ComponentRegistryEntry> registry = {
+      {"TransformComponent",
+       {&TransformComponent::FromJson,
+        [] { return std::make_unique<ComponentPool<TransformComponent>>(); }}},
+      {"HealthComponent",
+       {&HealthComponent::FromJson,
+        [] { return std::make_unique<ComponentPool<HealthComponent>>(); }}},
   };
   return registry;
 }
