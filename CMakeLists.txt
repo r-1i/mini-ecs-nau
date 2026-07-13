@@ -19,12 +19,15 @@
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 	# Add source to this project's executable.
-	add_executable (mini-ecs-nau "src/main.cpp" "src/Entity.h" "src/Component.h" "src/HealthComponent.h" "src/TransformComponent.h" "src/Scene.h" "src/System.h" "src/MovementSystem.h" "src/ISavable.h" "src/ComponentRegistry.h")
+	add_executable (mini-ecs-nau "src/main.cpp" "src/Entity.h" "src/Component.h" "src/HealthComponent.h" "src/TransformComponent.h" "src/Scene.h" "src/System.h" "src/MovementSystem.h" "src/ISavable.h" "src/ComponentRegistry.h" "src/Profiler.h")
 
 	add_executable(scene_tests tests/test_scene.cpp "src/ComponentRegistry.h")
 	add_executable(movement_tests tests/test_movement_system.cpp "src/ComponentRegistry.h")
 	add_executable(memory_tests tests/test_memory.cpp "src/ComponentRegistry.h")
 	add_executable(serialization_tests tests/test_serialization.cpp "src/ComponentRegistry.h")
+	# Not a correctness test - benchmark harness for issue 10 (profiler).
+	# Run in Release config; Debug numbers aren't representative.
+	add_executable(scene_benchmark tests/benchmark_scene.cpp "src/ComponentRegistry.h" "src/Profiler.h")
 
 	include(FetchContent)
 	FetchContent_Declare(
@@ -37,3 +40,4 @@
 	target_link_libraries(movement_tests PRIVATE nlohmann_json::nlohmann_json)
 	target_link_libraries(memory_tests PRIVATE nlohmann_json::nlohmann_json)
 	target_link_libraries(serialization_tests PRIVATE nlohmann_json::nlohmann_json)
+	target_link_libraries(scene_benchmark PRIVATE nlohmann_json::nlohmann_json)

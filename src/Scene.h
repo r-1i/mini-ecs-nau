@@ -13,6 +13,7 @@
 #include "ComponentRegistry.h"
 #include "Entity.h"
 #include "ISavable.h"
+#include "Profiler.h"
 #include "System.h"
 
 class Scene {
@@ -25,6 +26,11 @@ class Scene {
     auto component = std::make_unique<T>(std::forward<Args>(args)...);
     T& ref = *component;
     entities_[e][std::type_index(typeid(T))] = std::move(component);
+    // sizeof(T) is only known here, at the call site where T is a
+    // concrete type - by the time components are stored as
+    // Component*, that information is erased. This is what
+    // MemoryBytes() below reports as real component payload size.
+    totalComponentBytes_ += sizeof(T);
     return ref;
   }
 
@@ -75,6 +81,7 @@ class Scene {
   }
 
   void Update(float dt) {
+    PROFILE_SCOPE("Scene::Update");
     for (auto& system : systems_) system->Execute(dt);
   }
 
@@ -156,10 +163,32 @@ class Scene {
 
       entities_ = std::move(loaded.entities_);
       nextEntityId_ = loaded.nextEntityId_;
+      // Components inserted here go through the registry factory, not
+      // AddComponent<T>, so totalComponentBytes_ isn't updated - a
+      // known gap in MemoryBytes() for loaded scenes.
       return true;
     } catch (const nlohmann::json::exception&) {
       return false;
     }
+  }
+
+  // Approximate memory footprint of component storage: real bytes
+  // used by component payloads (tracked in AddComponent, where T is
+  // still known) plus a rough estimate of unordered_map/unique_ptr
+  // overhead per stored component. Node layout is
+  // implementation-defined, so this is an approximation - useful for
+  // a relative before/after comparison against alternative storage
+  // designs, not as an exact byte count.
+  size_t MemoryBytes() const {
+    constexpr size_t kNodeOverhead = 4 * sizeof(void*);
+    size_t bytes = totalComponentBytes_;
+    for (const auto& [entity, components] : entities_) {
+      bytes += components.size() *
+               (sizeof(std::type_index) + sizeof(std::unique_ptr<Component>) +
+                kNodeOverhead);
+    }
+    bytes += entities_.size() * kNodeOverhead;
+    return bytes;
   }
 
  private:
@@ -176,4 +205,5 @@ class Scene {
   Entity::Id nextEntityId_ = 0;
 
   std::vector<std::unique_ptr<System>> systems_;
+  size_t totalComponentBytes_ = 0;
 };
