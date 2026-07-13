@@ -21,13 +21,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
       # Same sccache the project's CMakeLists.txt looks for via
-      # find_program(SCCACHE_PROGRAM sccache) - installs the binary and
-      # wires it to the Actions cache backend, so this exercises the
-      # exact compiler-cache path added in this commit.
+      # find_program(SCCACHE_PROGRAM sccache) - just installs the binary.
+      # Caching is handled below via actions/cache on sccache's own
+      # local disk cache: the GHA cache backend (SCCACHE_GHA_ENABLED)
+      # doesn't work reliably on hosted runners right now (ACTIONS_CACHE_URL
+      # is missing under the newer Actions cache service), local-disk is
+      # the simpler, well-supported option.
       - name: Set up sccache
         uses: mozilla-actions/sccache-action@v0.0.10
-        with:
-          version: "v0.8.2"
 
       # FetchContent downloads nlohmann/json into build/_deps on first
       # configure; caching it keyed on CMakeLists.txt avoids
@@ -38,14 +39,22 @@ jobs:
           path: build/_deps
           key: ${{ runner.os }}-deps-${{ hashFiles('CMakeLists.txt') }}
 
+      # sccache's own local disk cache (~/.cache/sccache) - keyed per
+      # build_type since Debug/Release object files differ. restore-keys
+      # lets a later run reuse an older cache entry as a starting point
+      # instead of starting from empty.
+      - name: Cache sccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/sccache
+          key: ${{ runner.os }}-sccache-${{ matrix.build_type }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-${{ matrix.build_type }}-
+
       - name: Configure
-        env:
-          SCCACHE_GHA_ENABLED: "true"
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
-        env:
-          SCCACHE_GHA_ENABLED: "true"
         run: cmake --build build
 
       # Debug only: assert() compiles out under NDEBUG (Release), so a
