@@ -2,53 +2,57 @@
 #include <iostream>
 #include <memory>
 
-#include "../src/HealthComponent.h"
-#include "../src/MovementSystem.h"
-#include "../src/Scene.h"
-#include "../src/TransformComponent.h"
+#include "../src/components/health_component.h"
+#include "../src/components/transform_component.h"
+#include "../src/core/scene.h"
+#include "../src/systems/movement_system.h"
 
-int main() {
-  Scene scene;
-  Entity e1 = scene.CreateEntity();
-  Entity e2 = scene.CreateEntity();
-  assert(e1.id() != e2.id());
+int main()
+{
+    Scene scene;
+    Entity e1 = scene.createEntity();
+    Entity e2 = scene.createEntity();
+    assert(e1.id() != e2.id());
 
-  scene.AddComponent<TransformComponent>(e1);
-  scene.AddComponent<HealthComponent>(e1, 100.f);
+    scene.addComponent<TransformComponent>(e1);
+    scene.addComponent<HealthComponent>(e1, 100.f);
 
-  assert(scene.HasComponent<TransformComponent>(e1));
-  assert(!scene.HasComponent<TransformComponent>(e2));
+    assert(scene.hasComponent<TransformComponent>(e1));
+    assert(!scene.hasComponent<TransformComponent>(e2));
 
-  scene.GetComponent<TransformComponent>(e1)->position.x = 5.f;
-  assert(scene.GetComponent<TransformComponent>(e1)->position.x == 5.f);
+    scene.getComponent<TransformComponent>(e1)->position.x = 5.f;
+    assert(scene.getComponent<TransformComponent>(e1)->position.x == 5.f);
 
-  scene.DestroyEntity(e1);
-  assert(!scene.HasComponent<TransformComponent>(e1));
+    scene.destroyEntity(e1);
+    assert(!scene.hasComponent<TransformComponent>(e1));
 
-  bool threw = false;
-  try {
-    scene.GetComponent<TransformComponent>(e2);
-  } catch (const std::out_of_range&) {
-    threw = true;
-  }
-  assert(threw);
+    bool threw = false;
+    try
+    {
+        scene.getComponent<TransformComponent>(e2);
+    }
+    catch (const std::out_of_range&)
+    {
+        threw = true;
+    }
+    assert(threw);
 
-  Entity e3 = scene.CreateEntity();
-  scene.AddComponent<TransformComponent>(e3);
+    Entity e3 = scene.createEntity();
+    scene.addComponent<TransformComponent>(e3);
 
-  scene.RegisterSystem(std::make_unique<MovementSystem>(scene));
-  std::cout << "Pos.x [e3]: "
-            << scene.GetComponent<TransformComponent>(e3)->position.x
-            << std::endl;
-  scene.Update(1.0f);  // Move entities for 1 second
-  std::cout << "Pos.x [e3]: "
-            << scene.GetComponent<TransformComponent>(e3)->position.x
-            << std::endl;
-  scene.Update(1.0f);  // Move entities for 1 second
-  std::cout << "Pos.x [e3]: "
-            << scene.GetComponent<TransformComponent>(e3)->position.x
-            << std::endl;
+    scene.registerSystem(std::make_unique<MovementSystem>(scene));
+    std::cout << "Pos.x [e3]: "
+              << scene.getComponent<TransformComponent>(e3)->position.x
+              << std::endl;
+    scene.update(1.0f);  // Move entities for 1 second
+    std::cout << "Pos.x [e3]: "
+              << scene.getComponent<TransformComponent>(e3)->position.x
+              << std::endl;
+    scene.update(1.0f);  // Move entities for 1 second
+    std::cout << "Pos.x [e3]: "
+              << scene.getComponent<TransformComponent>(e3)->position.x
+              << std::endl;
 
-  std::cout << "ALL SCENE TESTS PASSED\n";
-  return 0;
+    std::cout << "ALL SCENE TESTS PASSED\n";
+    return 0;
 }

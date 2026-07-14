@@ -1,4 +1,4 @@
-﻿	# CMakeList.txt : CMake project for mini-ecs-nau, include source and define
+	# CMakeList.txt : CMake project for mini-ecs-nau, include source and define
 	# project specific logic here.
 	#
 	cmake_minimum_required (VERSION 3.16)
@@ -30,16 +30,48 @@
 	set(CMAKE_CXX_STANDARD 20)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-	# Add source to this project's executable.
-	add_executable (mini-ecs-nau "src/main.cpp" "src/Entity.h" "src/Component.h" "src/HealthComponent.h" "src/TransformComponent.h" "src/Scene.h" "src/System.h" "src/MovementSystem.h" "src/ISavable.h" "src/ComponentRegistry.h" "src/Profiler.h" "src/IComponentPool.h" "src/ComponentPool.h")
+	# Headers here are for IDE grouping only (Visual Studio's CMake
+	# generator needs them listed to show up in Solution Explorer) -
+	# compilation only actually depends on the .cpp sources below.
+	set(ECS_HEADERS
+	  "src/core/entity.h"
+	  "src/core/component.h"
+	  "src/core/i_savable.h"
+	  "src/core/i_component_pool.h"
+	  "src/core/component_pool.h"
+	  "src/core/type_id.h"
+	  "src/core/component_registry.h"
+	  "src/core/scene.h"
+	  "src/core/system.h"
+	  "src/components/transform_component.h"
+	  "src/components/health_component.h"
+	  "src/systems/movement_system.h"
+	  "src/profiling/profiler.h"
+	)
 
-	add_executable(scene_tests tests/test_scene.cpp "src/ComponentRegistry.h" "src/IComponentPool.h" "src/ComponentPool.h")
-	add_executable(movement_tests tests/test_movement_system.cpp "src/ComponentRegistry.h" "src/IComponentPool.h" "src/ComponentPool.h")
-	add_executable(memory_tests tests/test_memory.cpp "src/ComponentRegistry.h" "src/IComponentPool.h" "src/ComponentPool.h")
-	add_executable(serialization_tests tests/test_serialization.cpp "src/ComponentRegistry.h" "src/IComponentPool.h" "src/ComponentPool.h")
+	# Non-template logic lives in .cpp - only ComponentPool<T> and Scene's
+	# template methods stay header-only, since templates must be visible
+	# at the instantiation point. Every executable below links the same
+	# set: small project, not worth tracking per-target subsets.
+	set(ECS_SOURCES
+	  "src/core/component_registry.cpp"
+	  "src/core/scene.cpp"
+	  "src/components/transform_component.cpp"
+	  "src/components/health_component.cpp"
+	  "src/systems/movement_system.cpp"
+	  "src/profiling/profiler.cpp"
+	)
+
+	# Add source to this project's executable.
+	add_executable (mini-ecs-nau "src/main.cpp" ${ECS_SOURCES} ${ECS_HEADERS})
+
+	add_executable(scene_tests tests/test_scene.cpp ${ECS_SOURCES} ${ECS_HEADERS})
+	add_executable(movement_tests tests/test_movement_system.cpp ${ECS_SOURCES} ${ECS_HEADERS})
+	add_executable(memory_tests tests/test_memory.cpp ${ECS_SOURCES} ${ECS_HEADERS})
+	add_executable(serialization_tests tests/test_serialization.cpp ${ECS_SOURCES} ${ECS_HEADERS})
 	# Not a correctness test - benchmark harness for issue 10 (profiler).
 	# Run in Release config; Debug numbers aren't representative.
-	add_executable(scene_benchmark tests/benchmark_scene.cpp "src/ComponentRegistry.h" "src/Profiler.h" "src/IComponentPool.h" "src/ComponentPool.h")
+	add_executable(scene_benchmark tests/benchmark_scene.cpp ${ECS_SOURCES} ${ECS_HEADERS})
 
 	include(FetchContent)
 	FetchContent_Declare(
