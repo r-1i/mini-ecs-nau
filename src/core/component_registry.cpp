@@ -10,11 +10,8 @@ getComponentRegistry()
     static const std::unordered_map<std::string, ComponentRegistryEntry>
         registry = {
             {"TransformComponent",
-             {&TransformComponent::fromJson,
-              []
-              {
-                  return std::make_unique<ComponentPool<TransformComponent>>();
-              },
+             {&TransformComponent::fromJson, []
+              { return std::make_unique<ComponentPool<TransformComponent>>(); },
               getTypeId<TransformComponent>()}},
             {"HealthComponent",
              {&HealthComponent::fromJson,
